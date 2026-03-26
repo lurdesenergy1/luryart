@@ -73,6 +73,12 @@ npm run telegram:set-webhook -- https://TU-SITIO.netlify.app
 ### Concierto
 
 ```text
+/concierto Tengo un recital en Pamplona el 18 de abril de 2026 a las 19:30 en la parroquia de San Lorenzo. Destacado.
+```
+
+O en modo estructurado:
+
+```text
 /concierto
 titulo: Recital en Pamplona
 fecha: 2026-04-18
@@ -85,6 +91,12 @@ destacado: si
 ```
 
 ### Noticia
+
+```text
+/noticia Nueva colaboracion artistica para la temporada 2026. Destacada. https://luryart.com/
+```
+
+O en modo estructurado:
 
 ```text
 /noticia
@@ -102,4 +114,5 @@ destacado: si
 npm run test:telegram-parser
 npm run validate-content
 npm run test:content-flow
+npm run telegram:set-commands
 ```

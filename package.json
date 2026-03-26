@@ -4,6 +4,7 @@
   "scripts": {
     "dispatch:github": "node scripts/github-dispatch.js",
     "preview": "node scripts/preview-local.js",
+    "telegram:set-commands": "node scripts/set-telegram-commands.js",
     "telegram:set-webhook": "node scripts/register-telegram-webhook.js",
     "test:telegram-parser": "node scripts/test-telegram-parser.js",
     "test:content-flow": "node scripts/test-content-flow.js",

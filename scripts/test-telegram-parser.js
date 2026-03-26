@@ -59,9 +59,45 @@ lugar raro: X
   assert.match(result.message, /campos no reconocidos/i);
 }
 
+function testNaturalConcertMessage() {
+  const result = parseTelegramContent(
+    "/concierto Tengo un recital en Pamplona el 18 de abril de 2026 a las 19:30 en la parroquia de San Lorenzo. Destacado."
+  );
+
+  assert.strictEqual(result.type, "content");
+  assert.strictEqual(result.kind, "concert");
+  assert.strictEqual(result.entry.date, "2026-04-18");
+  assert.strictEqual(result.entry.time, "19:30");
+  assert.strictEqual(result.entry.city, "Pamplona");
+  assert.strictEqual(result.entry.featured, true);
+}
+
+function testNaturalNewsMessage() {
+  const result = parseTelegramContent(
+    "/noticia Nueva colaboracion artistica para la temporada 2026. Destacada. https://luryart.com/"
+  );
+
+  assert.strictEqual(result.type, "content");
+  assert.strictEqual(result.kind, "news");
+  assert.strictEqual(result.entry.linkUrl, "https://luryart.com/");
+  assert.strictEqual(result.entry.featured, true);
+}
+
+function testInferKindWithoutCommand() {
+  const result = parseTelegramContent(
+    "Nueva colaboracion artistica anunciada para la temporada 2026 con estreno en otoño."
+  );
+
+  assert.strictEqual(result.type, "content");
+  assert.strictEqual(result.kind, "news");
+}
+
 testConcertMessage();
 testNewsMessage();
 testHelp();
 testUnknownField();
+testNaturalConcertMessage();
+testNaturalNewsMessage();
+testInferKindWithoutCommand();
 
 console.log("Parser de Telegram validado correctamente.");
