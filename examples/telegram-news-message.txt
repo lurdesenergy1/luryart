@@ -1,0 +1,7 @@
+/noticia
+titulo: Nueva colaboracion artistica
+fecha: 2026-04-10
+resumen: Anunciamos una nueva colaboracion para proximos ciclos culturales.
+texto enlace: Leer mas
+enlace: https://luryart.com/
+destacado: si

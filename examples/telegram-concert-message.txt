@@ -1,0 +1,9 @@
+/concierto
+titulo: Recital en Pamplona
+fecha: 2026-04-18
+hora: 19:30
+recinto: Parroquia de San Lorenzo
+ciudad: Pamplona
+descripcion: Programa de recital y repertorio sacro.
+enlace: https://ejemplo.com
+destacado: si

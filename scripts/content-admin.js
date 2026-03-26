@@ -46,7 +46,48 @@ function slugify(text) {
 }
 
 function isValidDate(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+  const text = String(value || "");
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return false;
+  }
+
+  const [year, month, day] = text.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+function isValidTime(value) {
+  const text = String(value || "");
+
+  if (!text) {
+    return true;
+  }
+
+  if (!/^\d{2}:\d{2}$/.test(text)) {
+    return false;
+  }
+
+  const [hours, minutes] = text.split(":").map(Number);
+  return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
+}
+
+function isValidHttpUrl(value) {
+  if (!value) {
+    return true;
+  }
+
+  try {
+    const url = new URL(String(value));
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch (error) {
+    return false;
+  }
 }
 
 function asTrimmedString(value) {
@@ -59,7 +100,7 @@ function asBoolean(value) {
   }
 
   if (typeof value === "string") {
-    return ["1", "true", "yes", "y", "si", "sí", "s"].includes(value.toLowerCase());
+    return ["1", "true", "yes", "y", "si", "s"].includes(value.toLowerCase());
   }
 
   return Boolean(value);
@@ -81,11 +122,19 @@ function normalizeConcert(entry) {
   }
 
   if (!isValidDate(date)) {
-    throw new Error(`Fecha inválida para concierto: ${date}`);
+    throw new Error(`Fecha invalida para concierto: ${date}`);
+  }
+
+  if (!isValidTime(time)) {
+    throw new Error(`Hora invalida para concierto: ${time}`);
+  }
+
+  if (!isValidHttpUrl(ticketUrl)) {
+    throw new Error(`URL invalida para concierto: ${ticketUrl}`);
   }
 
   if (!CONCERT_STATUSES.has(status)) {
-    throw new Error(`Estado inválido para concierto: ${status}`);
+    throw new Error(`Estado invalido para concierto: ${status}`);
   }
 
   const id = asTrimmedString(entry.id) || `${slugify(title)}-${date}`;
@@ -108,8 +157,8 @@ function normalizeNews(entry) {
   const title = asTrimmedString(entry.title);
   const date = asTrimmedString(entry.date);
   const summary = asTrimmedString(entry.summary);
-  const linkText = asTrimmedString(entry.linkText);
   const linkUrl = asTrimmedString(entry.linkUrl);
+  const linkText = asTrimmedString(entry.linkText) || (linkUrl ? "Mas informacion" : "");
   const status = asTrimmedString(entry.status || "published") || "published";
   const featured = asBoolean(entry.featured);
 
@@ -118,11 +167,19 @@ function normalizeNews(entry) {
   }
 
   if (!isValidDate(date)) {
-    throw new Error(`Fecha inválida para noticia: ${date}`);
+    throw new Error(`Fecha invalida para noticia: ${date}`);
+  }
+
+  if (!isValidHttpUrl(linkUrl)) {
+    throw new Error(`URL invalida para noticia: ${linkUrl}`);
+  }
+
+  if (linkText && !linkUrl) {
+    throw new Error("La noticia no puede tener `linkText` sin `linkUrl`.");
   }
 
   if (!NEWS_STATUSES.has(status)) {
-    throw new Error(`Estado inválido para noticia: ${status}`);
+    throw new Error(`Estado invalido para noticia: ${status}`);
   }
 
   const id = asTrimmedString(entry.id) || `${slugify(title)}-${date}`;
@@ -210,7 +267,7 @@ function validateCollection(kind) {
     seen.add(normalized.id);
   });
 
-  console.log(`Validación correcta para ${kind}.`);
+  console.log(`Validacion correcta para ${kind}.`);
 }
 
 function readPayloadFromFile(filePath) {
