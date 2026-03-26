@@ -1,0 +1,72 @@
+name: Content Update
+
+on:
+  repository_dispatch:
+    types:
+      - telegram-content-update
+  workflow_dispatch:
+    inputs:
+      content_kind:
+        description: "Tipo de contenido a publicar"
+        required: true
+        type: choice
+        options:
+          - concert
+          - news
+      payload_json:
+        description: "JSON con el contenido a guardar"
+        required: true
+        type: string
+
+jobs:
+  update-content:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Resolve payload from repository dispatch
+        if: github.event_name == 'repository_dispatch'
+        shell: bash
+        run: |
+          echo "CONTENT_KIND=${{ github.event.client_payload.kind }}" >> "$GITHUB_ENV"
+          cat > telegram-payload.json <<'EOF'
+          ${{ toJson(github.event.client_payload.entry) }}
+          EOF
+
+      - name: Resolve payload from workflow dispatch
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          echo "CONTENT_KIND=${{ inputs.content_kind }}" >> "$GITHUB_ENV"
+          cat > telegram-payload.json <<'EOF'
+          ${{ inputs.payload_json }}
+          EOF
+
+      - name: Apply content update
+        run: node scripts/content-admin.js apply-file "$CONTENT_KIND" telegram-payload.json
+
+      - name: Validate content
+        run: node scripts/content-admin.js validate
+
+      - name: Commit and push changes
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "Sin cambios para guardar."
+            exit 0
+          fi
+
+          git config user.name "luryart-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add content/concerts.json content/news.json
+          git commit -m "chore: actualizar contenido desde telegram"
+          git push

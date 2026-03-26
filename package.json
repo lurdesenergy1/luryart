@@ -1,0 +1,10 @@
+{
+  "name": "luryart-site",
+  "private": true,
+  "scripts": {
+    "dispatch:github": "node scripts/github-dispatch.js",
+    "preview": "node scripts/preview-local.js",
+    "test:content-flow": "node scripts/test-content-flow.js",
+    "validate-content": "node scripts/content-admin.js validate"
+  }
+}
