@@ -1014,8 +1014,175 @@ function summarizeEntry(kind, entry) {
     .join("\n");
 }
 
+function detectKindFromText(text) {
+  const normalized = normalizeText(text);
+
+  if (/\b(video|videos|youtube|youtu\.be|youtube\.com)\b/.test(normalized)) {
+    return "video";
+  }
+
+  if (/\b(noticia|noticias|anuncio|anuncios|comunicado|comunicados)\b/.test(normalized)) {
+    return "news";
+  }
+
+  if (/\b(concierto|conciertos|recital|recitales|zarzuela|zarzuelas|opera|musical|musicales)\b/.test(normalized)) {
+    return "concert";
+  }
+
+  return "";
+}
+
+function detectActionFromText(text) {
+  const normalized = normalizeText(text);
+
+  if (/^\/?(ayuda|help|start)\b/.test(normalized)) {
+    return "help";
+  }
+
+  if (/^\/?(borrar|borra|elimina|quita)\b/.test(normalized) || /\b(borra|elimina|quita)\b/.test(normalized)) {
+    return "delete";
+  }
+
+  if (/^\/?(listar|lista|muestra)\b/.test(normalized) || /\b(que hay|que tienes|muestrame|muestrame|lista)\b/.test(normalized)) {
+    return "list";
+  }
+
+  if (/^\/?(editar|edita|actualiza|modifica|cambia)\b/.test(normalized) || /\b(actualiza|modifica|cambia|edita)\b/.test(normalized)) {
+    return "update";
+  }
+
+  return "upsert";
+}
+
+function hasConfirmation(text) {
+  return /\b(confirmar|confirmado|confirma|si borrar|si eliminar|si editar)\b/.test(normalizeText(text));
+}
+
+function extractExplicitId(text) {
+  const match = String(text || "").match(/\bid\s*[:=]\s*([a-z0-9-]+)/i);
+  return match ? match[1].trim() : "";
+}
+
+function stripActionPreamble(text) {
+  return cleanText(
+    String(text || "")
+      .replace(/^\/\S+\s*/i, "")
+      .replace(/\b(confirmar|confirmado|confirma)\b/gi, "")
+      .replace(/\bid\s*[:=]\s*[a-z0-9-]+\b/gi, "")
+      .trim()
+  );
+}
+
+function parseMutationRequest(text, options = {}) {
+  const action = detectActionFromText(text);
+
+  if (action === "help") {
+    return {
+      type: "help",
+      message: buildHelpMessage(),
+    };
+  }
+
+  if (action === "upsert") {
+    const parsed = parseTelegramContent(text, options);
+
+    if (parsed.type !== "content") {
+      return parsed;
+    }
+
+    return {
+      type: "mutation",
+      action: "upsert",
+      kind: parsed.kind,
+      entry: parsed.entry,
+      confirm: true,
+    };
+  }
+
+  const kind = detectKindFromText(text);
+
+  if (!kind) {
+    return {
+      type: "error",
+      message: "Necesito saber si hablas de un concierto, una noticia o un video.",
+      help: buildHelpMessage(),
+    };
+  }
+
+  const explicitId = extractExplicitId(text);
+  const confirm = hasConfirmation(text);
+  const cleaned = stripActionPreamble(text);
+
+  if (action === "delete" || action === "list") {
+    return {
+      type: "mutation",
+      action,
+      kind,
+      targetId: explicitId,
+      query: explicitId ? "" : cleaned,
+      confirm,
+    };
+  }
+
+  const parts = String(text || "").split(/\r?\n/);
+  const firstLine = parts.find((line) => String(line || "").trim()) || "";
+  let patchText = "";
+  let query = "";
+
+  if (parts.length > 1) {
+    const rest = parts.slice(1).join("\n").trim();
+
+    if (firstLine.includes(":")) {
+      const index = firstLine.indexOf(":");
+      query = cleanText(firstLine.slice(0, index).replace(/^\/?\S+\s*/i, "").replace(/\b(confirmar|confirmado|confirma)\b/gi, ""));
+      patchText = [firstLine.slice(index + 1).trim(), rest].filter(Boolean).join("\n");
+    } else {
+      patchText = rest;
+      query = cleanText(firstLine.replace(/^\/?\S+\s*/i, "").replace(/\b(confirmar|confirmado|confirma)\b/gi, ""));
+    }
+  } else if (firstLine.includes(":")) {
+    const index = firstLine.indexOf(":");
+    query = cleanText(firstLine.slice(0, index).replace(/^\/?\S+\s*/i, ""));
+    patchText = firstLine.slice(index + 1).trim();
+  } else {
+    query = cleanText(firstLine.replace(/^\/?\S+\s*/i, ""));
+    patchText = "";
+  }
+
+  query = query
+    .replace(/\b(actualiza|modifica|cambia|edita)\b/gi, "")
+    .replace(/\b(concierto|noticia|video)\b/gi, "")
+    .trim();
+
+  if (!patchText) {
+    return {
+      type: "error",
+      kind,
+      message: "Para editar necesito una referencia y los cambios. Ejemplo: actualiza la noticia X: resumen: ...",
+      help: buildHelpMessage(kind),
+    };
+  }
+
+  const parsedPatch = parseTelegramContent(`/${kind === "concert" ? "concierto" : kind === "news" ? "noticia" : "video"} ${patchText}`, options);
+
+  if (parsedPatch.type !== "content") {
+    return parsedPatch;
+  }
+
+  return {
+    type: "mutation",
+    action: "update",
+    kind,
+    targetId: explicitId,
+    query,
+    entry: parsedPatch.entry,
+    confirm,
+  };
+}
+
 module.exports = {
   buildHelpMessage,
+  parseMutationRequest,
   parseTelegramContent,
   summarizeEntry,
 };

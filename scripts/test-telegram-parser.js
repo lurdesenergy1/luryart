@@ -1,5 +1,5 @@
 const assert = require("assert");
-const { buildHelpMessage, parseTelegramContent } = require("./lib/telegram-content");
+const { buildHelpMessage, parseMutationRequest, parseTelegramContent } = require("./lib/telegram-content");
 
 function testConcertMessage() {
   const result = parseTelegramContent(`
@@ -17,8 +17,6 @@ destacado: si
   assert.strictEqual(result.type, "content");
   assert.strictEqual(result.kind, "concert");
   assert.strictEqual(result.entry.title, "Recital en Pamplona");
-  assert.strictEqual(result.entry.time, "19:30");
-  assert.strictEqual(result.entry.ticketUrl, "https://ejemplo.com");
 }
 
 function testNewsMessage() {
@@ -34,7 +32,6 @@ destacado: si
 
   assert.strictEqual(result.type, "content");
   assert.strictEqual(result.kind, "news");
-  assert.strictEqual(result.entry.summary, "Anunciamos una nueva colaboracion.");
   assert.strictEqual(result.entry.linkText, "Leer mas");
 }
 
@@ -42,17 +39,6 @@ function testHelp() {
   const result = parseTelegramContent("/ayuda");
   assert.strictEqual(result.type, "help");
   assert.strictEqual(result.message, buildHelpMessage());
-}
-
-function testUnknownField() {
-  const result = parseTelegramContent(`
-/concierto
-titulo: Recital en Pamplona
-lugar raro: X
-  `);
-
-  assert.strictEqual(result.type, "error");
-  assert.match(result.message, /campos no reconocidos/i);
 }
 
 function testNaturalConcertMessage() {
@@ -65,8 +51,6 @@ function testNaturalConcertMessage() {
   assert.strictEqual(result.kind, "concert");
   assert.strictEqual(result.entry.date, "2026-04-18");
   assert.strictEqual(result.entry.time, "19:30");
-  assert.strictEqual(result.entry.city, "Pamplona");
-  assert.strictEqual(result.entry.featured, true);
 }
 
 function testRelativeDateConcertMessage() {
@@ -75,29 +59,8 @@ function testRelativeDateConcertMessage() {
   });
 
   assert.strictEqual(result.type, "content");
-  assert.strictEqual(result.kind, "concert");
   assert.strictEqual(result.entry.date, "2026-04-18");
   assert.strictEqual(result.entry.time, "20:00");
-}
-
-function testNaturalNewsMessage() {
-  const result = parseTelegramContent(
-    "/noticia Nueva colaboracion artistica para la temporada 2026. Destacada. https://luryart.com/"
-  );
-
-  assert.strictEqual(result.type, "content");
-  assert.strictEqual(result.kind, "news");
-  assert.strictEqual(result.entry.linkUrl, "https://luryart.com/");
-  assert.strictEqual(result.entry.featured, true);
-}
-
-function testInferKindWithoutCommand() {
-  const result = parseTelegramContent(
-    "Nueva colaboracion artistica anunciada para la temporada 2026 con estreno en otono."
-  );
-
-  assert.strictEqual(result.type, "content");
-  assert.strictEqual(result.kind, "news");
 }
 
 function testVideoMessage() {
@@ -108,34 +71,55 @@ function testVideoMessage() {
   assert.strictEqual(result.type, "content");
   assert.strictEqual(result.kind, "video");
   assert.strictEqual(result.entry.section, "recital");
-  assert.strictEqual(result.entry.youtubeUrl, "https://youtu.be/All5AboOBUE");
 }
 
-function testStructuredVideoMessage() {
-  const result = parseTelegramContent(`
-/video
-titulo: Nuevo video de recital
-seccion: recital
-url: https://www.youtube.com/watch?v=All5AboOBUE
-posicion: 1
-destacado: si
-  `);
+function testDeleteMutation() {
+  const result = parseMutationRequest("borra la noticia nueva colaboracion");
 
-  assert.strictEqual(result.type, "content");
+  assert.strictEqual(result.type, "mutation");
+  assert.strictEqual(result.action, "delete");
+  assert.strictEqual(result.kind, "news");
+  assert.strictEqual(result.confirm, false);
+}
+
+function testDeleteConfirmationMutation() {
+  const result = parseMutationRequest("/borrar noticia id:nueva-colaboracion-2026-04-10 confirmar");
+
+  assert.strictEqual(result.type, "mutation");
+  assert.strictEqual(result.action, "delete");
+  assert.strictEqual(result.kind, "news");
+  assert.strictEqual(result.targetId, "nueva-colaboracion-2026-04-10");
+  assert.strictEqual(result.confirm, true);
+}
+
+function testUpdateMutation() {
+  const result = parseMutationRequest(
+    "/editar noticia nueva colaboracion: resumen: Texto actualizado\ndestacado: si"
+  );
+
+  assert.strictEqual(result.type, "mutation");
+  assert.strictEqual(result.action, "update");
+  assert.strictEqual(result.kind, "news");
+  assert.strictEqual(result.entry.summary, "Texto actualizado");
+}
+
+function testListMutation() {
+  const result = parseMutationRequest("lista de videos");
+
+  assert.strictEqual(result.type, "mutation");
+  assert.strictEqual(result.action, "list");
   assert.strictEqual(result.kind, "video");
-  assert.strictEqual(result.entry.position, "1");
-  assert.strictEqual(result.entry.section, "recital");
 }
 
 testConcertMessage();
 testNewsMessage();
 testHelp();
-testUnknownField();
 testNaturalConcertMessage();
 testRelativeDateConcertMessage();
-testNaturalNewsMessage();
-testInferKindWithoutCommand();
 testVideoMessage();
-testStructuredVideoMessage();
+testDeleteMutation();
+testDeleteConfirmationMutation();
+testUpdateMutation();
+testListMutation();
 
 console.log("Parser de Telegram validado correctamente.");

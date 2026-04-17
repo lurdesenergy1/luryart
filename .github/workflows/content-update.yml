@@ -43,6 +43,8 @@ jobs:
         shell: bash
         run: |
           echo "CONTENT_KIND=${{ github.event.client_payload.kind }}" >> "$GITHUB_ENV"
+          echo "CONTENT_ACTION=${{ github.event.client_payload.action || 'upsert' }}" >> "$GITHUB_ENV"
+          echo "CONTENT_ID=${{ github.event.client_payload.id || '' }}" >> "$GITHUB_ENV"
           cat > telegram-payload.json <<'EOF'
           ${{ toJson(github.event.client_payload.entry) }}
           EOF
@@ -52,12 +54,20 @@ jobs:
         shell: bash
         run: |
           echo "CONTENT_KIND=${{ inputs.content_kind }}" >> "$GITHUB_ENV"
+          echo "CONTENT_ACTION=upsert" >> "$GITHUB_ENV"
+          echo "CONTENT_ID=" >> "$GITHUB_ENV"
           cat > telegram-payload.json <<'EOF'
           ${{ inputs.payload_json }}
           EOF
 
       - name: Apply content update
-        run: node scripts/content-admin.js apply-file "$CONTENT_KIND" telegram-payload.json
+        shell: bash
+        run: |
+          if [ "${CONTENT_ACTION:-upsert}" = "delete" ]; then
+            node scripts/content-admin.js delete-id "$CONTENT_KIND" "$CONTENT_ID"
+          else
+            node scripts/content-admin.js apply-file "$CONTENT_KIND" telegram-payload.json
+          fi
 
       - name: Validate content
         run: node scripts/content-admin.js validate

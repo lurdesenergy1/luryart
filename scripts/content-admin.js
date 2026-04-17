@@ -359,6 +359,24 @@ function upsertEntry(kind, entry) {
   console.log(`Actualizado ${kind}: ${normalized.id}`);
 }
 
+function deleteEntry(kind, id) {
+  const targetId = asTrimmedString(id);
+
+  if (!targetId) {
+    throw new Error("Debes indicar un `id` para borrar.");
+  }
+
+  const collection = loadCollection(kind);
+  const filtered = collection.filter((item) => item.id !== targetId);
+
+  if (filtered.length === collection.length) {
+    throw new Error(`No existe ningun elemento ${kind} con id ${targetId}.`);
+  }
+
+  saveCollection(kind, filtered);
+  console.log(`Borrado ${kind}: ${targetId}`);
+}
+
 function validateCollection(kind) {
   const collection = loadCollection(kind);
   const seen = new Set();
@@ -390,6 +408,7 @@ function printUsage() {
   console.log("Uso:");
   console.log("  node scripts/content-admin.js validate");
   console.log("  node scripts/content-admin.js apply-file <concert|news|video> <payload.json>");
+  console.log("  node scripts/content-admin.js delete-id <concert|news|video> <id>");
 }
 
 function main() {
@@ -410,6 +429,16 @@ function main() {
 
     const payload = readPayloadFromFile(payloadPath);
     upsertEntry(kind, payload);
+    return;
+  }
+
+  if (command === "delete-id") {
+    if (!kind || !payloadPath) {
+      printUsage();
+      process.exit(1);
+    }
+
+    deleteEntry(kind, payloadPath);
     return;
   }
 

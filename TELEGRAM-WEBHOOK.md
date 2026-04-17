@@ -4,7 +4,7 @@
 
 1. En Telegram escribes al bot.
 2. Telegram manda el mensaje al webhook de Netlify.
-3. La funcion `telegram-webhook` interpreta concierto, noticia o video.
+3. La funcion `telegram-webhook` interpreta altas, ediciones, listados y borrados de concierto, noticia o video.
 4. La funcion dispara un `repository_dispatch` en GitHub.
 5. GitHub Actions actualiza `content/concerts.json`, `content/news.json` o `content/videos.json`.
 6. Netlify detecta el commit nuevo y publica la web.
@@ -60,6 +60,29 @@ posicion: 1
 destacado: si
 ```
 
+### Borrar una noticia
+
+```text
+borra la noticia nueva colaboracion
+```
+
+El bot te devolvera un comando de confirmacion con `id`.
+
+### Editar una noticia
+
+```text
+/editar noticia nueva colaboracion: resumen: Nuevo resumen
+destacado: si
+```
+
+### Listar contenido
+
+```text
+lista de noticias
+lista de conciertos
+lista de videos
+```
+
 ## Comandos del bot
 
 Los comandos que se cargan en Telegram son:
@@ -67,6 +90,9 @@ Los comandos que se cargan en Telegram son:
 - `/concierto`
 - `/noticia`
 - `/video`
+- `/editar`
+- `/borrar`
+- `/lista`
 - `/ayuda`
 - `/start`
 
