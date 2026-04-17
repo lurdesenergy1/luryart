@@ -201,7 +201,7 @@ function resolveTarget(kind, collection, targetId, query) {
 }
 
 function buildListMessage(kind, collection) {
-  const label = kind === "concert" ? "conciertos" : kind === "news" ? "noticias" : "videos";
+  const label = "noticias";
   const visible = collection.slice(0, 8);
 
   if (!visible.length) {
@@ -216,7 +216,7 @@ function buildListMessage(kind, collection) {
 }
 
 function buildDeleteConfirmation(kind, item) {
-  const label = kind === "concert" ? "concierto" : kind === "news" ? "noticia" : "video";
+  const label = "noticia";
   const command = `/borrar ${label} id:${item.id} confirmar`;
 
   return [
@@ -230,8 +230,8 @@ function buildDeleteConfirmation(kind, item) {
 }
 
 function buildUpdateConfirmation(kind, item, entry) {
-  const label = kind === "concert" ? "concierto" : kind === "news" ? "noticia" : "video";
-  const commandLabel = kind === "concert" ? "concierto" : kind === "news" ? "noticia" : "video";
+  const label = "noticia";
+  const commandLabel = "noticia";
   const lines = Object.entries(entry)
     .filter(([, value]) => value !== "" && value !== null && value !== undefined)
     .map(([key, value]) => `${key}: ${value}`);
@@ -250,7 +250,7 @@ function buildUpdateConfirmation(kind, item, entry) {
 }
 
 function buildSuccessMessage(action, kind, entryOrId) {
-  const label = kind === "concert" ? "concierto" : kind === "news" ? "noticia" : "video";
+  const label = "noticia";
 
   if (action === "delete") {
     return [
@@ -366,11 +366,20 @@ exports.handler = async (event) => {
     return json(200, { ok: true, error: true });
   }
 
+  if (parsed.kind && parsed.kind !== "news") {
+    await sendTelegramMessage(
+      process.env.TELEGRAM_BOT_TOKEN,
+      chatId,
+      "Desde Telegram solo esta permitido gestionar noticias.\n\nUsa /noticia, /editar noticia, /borrar noticia o /lista noticias."
+    );
+    return json(200, { ok: true, restricted: true });
+  }
+
   const origin = buildSiteOrigin(event.headers);
 
   try {
     if (parsed.action === "list") {
-      const collection = await loadCollection(origin, parsed.kind);
+      const collection = await loadCollection(origin, "news");
       await sendTelegramMessage(process.env.TELEGRAM_BOT_TOKEN, chatId, buildListMessage(parsed.kind, collection));
       return json(200, { ok: true, list: true });
     }
@@ -393,17 +402,17 @@ exports.handler = async (event) => {
       return json(200, { ok: true, upsert: true });
     }
 
-    const collection = await loadCollection(origin, parsed.kind);
-    const target = resolveTarget(parsed.kind, collection, parsed.targetId, parsed.query);
+      const collection = await loadCollection(origin, "news");
+      const target = resolveTarget(parsed.kind, collection, parsed.targetId, parsed.query);
 
     if (!target) {
-      await sendTelegramMessage(
-        process.env.TELEGRAM_BOT_TOKEN,
-        chatId,
-        `No he encontrado ningun elemento ${parsed.kind} con esa referencia. Puedes pedirme "lista de ${parsed.kind === "concert" ? "conciertos" : parsed.kind === "news" ? "noticias" : "videos"}".`
-      );
-      return json(200, { ok: true, not_found: true });
-    }
+        await sendTelegramMessage(
+          process.env.TELEGRAM_BOT_TOKEN,
+          chatId,
+          'No he encontrado ninguna noticia con esa referencia. Puedes pedirme "lista de noticias".'
+        );
+        return json(200, { ok: true, not_found: true });
+      }
 
     if (parsed.action === "delete") {
       if (!parsed.confirm) {

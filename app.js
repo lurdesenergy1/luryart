@@ -19,7 +19,7 @@ const VIDEO_SECTIONS = [
     section: "recital",
     containerId: "videos-recital",
     emptyTitle: "Sube el siguiente recital",
-    emptyCopy: "Puedes anadir nuevas piezas, entrevistas o directos desde Telegram.",
+    emptyCopy: "Puedes anadir nuevas piezas, entrevistas o directos desde contenido.",
     gridClass: "grid grid-cols-1 sm:grid-cols-2 gap-6 mt-5",
   },
   {
@@ -265,7 +265,7 @@ function renderNews(items) {
         <p class="text-sm font-semibold text-green-800">Sin noticias publicadas</p>
         <h3 class="text-2xl font-bold text-gray-900 mt-2">Este bloque esta listo para nuevos avisos</h3>
         <p class="text-gray-600 mt-3">
-          Aqui puedes anunciar estrenos, colaboraciones, entrevistas o nuevas fechas.
+          Aqui apareceran estrenos, colaboraciones, entrevistas o nuevas fechas en cuanto se publiquen.
         </p>
       </article>
     `;

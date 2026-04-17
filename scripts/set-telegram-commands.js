@@ -59,13 +59,11 @@ async function main() {
 
   await request(botToken, "setMyCommands", {
     commands: [
-      { command: "concierto", description: "Publicar un concierto" },
       { command: "noticia", description: "Publicar una noticia" },
-      { command: "video", description: "Anadir un video de YouTube" },
-      { command: "editar", description: "Editar por referencia o id" },
-      { command: "borrar", description: "Borrar con confirmacion" },
-      { command: "lista", description: "Listar contenido actual" },
-      { command: "ayuda", description: "Ver ejemplos de uso" },
+      { command: "editar", description: "Editar una noticia por referencia o id" },
+      { command: "borrar", description: "Borrar una noticia con confirmacion" },
+      { command: "lista", description: "Listar noticias publicadas" },
+      { command: "ayuda", description: "Ver ejemplos de noticias" },
       { command: "start", description: "Mostrar ayuda" },
     ],
   });

@@ -2,21 +2,9 @@ const assert = require("assert");
 const { buildHelpMessage, parseMutationRequest, parseTelegramContent } = require("./lib/telegram-content");
 
 function testConcertMessage() {
-  const result = parseTelegramContent(`
-/concierto
-titulo: Recital en Pamplona
-fecha: 2026-04-18
-hora: 19:30
-recinto: Parroquia de San Lorenzo
-ciudad: Pamplona
-descripcion: Programa de recital y repertorio sacro.
-enlace: https://ejemplo.com
-destacado: si
-  `);
-
-  assert.strictEqual(result.type, "content");
-  assert.strictEqual(result.kind, "concert");
-  assert.strictEqual(result.entry.title, "Recital en Pamplona");
+  const result = parseMutationRequest("/concierto Tengo un recital en Pamplona el 18 de abril de 2026.");
+  assert.strictEqual(result.type, "error");
+  assert.match(result.message, /solo esta permitido/i);
 }
 
 function testNewsMessage() {
@@ -42,35 +30,31 @@ function testHelp() {
 }
 
 function testNaturalConcertMessage() {
-  const result = parseTelegramContent(
+  const result = parseMutationRequest(
     "/concierto Tengo un recital en Pamplona el 18 de abril de 2026 a las 19:30 en la parroquia de San Lorenzo. Destacado.",
     { referenceDate: "2026-04-17T12:00:00Z" }
   );
 
-  assert.strictEqual(result.type, "content");
-  assert.strictEqual(result.kind, "concert");
-  assert.strictEqual(result.entry.date, "2026-04-18");
-  assert.strictEqual(result.entry.time, "19:30");
+  assert.strictEqual(result.type, "error");
+  assert.match(result.message, /solo esta permitido/i);
 }
 
 function testRelativeDateConcertMessage() {
-  const result = parseTelegramContent("/concierto Recital manana a las 20h en Pamplona.", {
+  const result = parseMutationRequest("/concierto Recital manana a las 20h en Pamplona.", {
     referenceDate: "2026-04-17T12:00:00Z",
   });
 
-  assert.strictEqual(result.type, "content");
-  assert.strictEqual(result.entry.date, "2026-04-18");
-  assert.strictEqual(result.entry.time, "20:00");
+  assert.strictEqual(result.type, "error");
+  assert.match(result.message, /solo esta permitido/i);
 }
 
 function testVideoMessage() {
-  const result = parseTelegramContent(
+  const result = parseMutationRequest(
     "/video Sube este video a la seccion recital https://youtu.be/All5AboOBUE destacado"
   );
 
-  assert.strictEqual(result.type, "content");
-  assert.strictEqual(result.kind, "video");
-  assert.strictEqual(result.entry.section, "recital");
+  assert.strictEqual(result.type, "error");
+  assert.match(result.message, /solo esta permitido/i);
 }
 
 function testDeleteMutation() {
@@ -104,11 +88,11 @@ function testUpdateMutation() {
 }
 
 function testListMutation() {
-  const result = parseMutationRequest("lista de videos");
+  const result = parseMutationRequest("lista de noticias");
 
   assert.strictEqual(result.type, "mutation");
   assert.strictEqual(result.action, "list");
-  assert.strictEqual(result.kind, "video");
+  assert.strictEqual(result.kind, "news");
 }
 
 testConcertMessage();

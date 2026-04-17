@@ -701,29 +701,10 @@ function parseNaturalVideo(text) {
 }
 
 function buildHelpMessage(kind) {
-  if (kind === "concert") {
-    return [
-      "Puedes enviarlo en texto libre o con campos.",
-      "",
-      "Rapido:",
-      "/concierto Tengo un recital en Pamplona el 18 de abril de 2026 a las 19:30 en la parroquia de San Lorenzo. Destacado.",
-      "",
-      "Estructurado:",
-      "/concierto",
-      "titulo: Recital en Pamplona",
-      "fecha: 2026-04-18",
-      "hora: 19:30",
-      "recinto: Parroquia de San Lorenzo",
-      "ciudad: Pamplona",
-      "descripcion: Programa de recital y repertorio sacro.",
-      "enlace: https://ejemplo.com",
-      "destacado: si",
-    ].join("\n");
-  }
-
   if (kind === "news") {
     return [
-      "Puedes enviarlo en texto libre o con campos.",
+      "El bot solo admite noticias.",
+      "Puedes enviarlas en texto libre o con campos.",
       "",
       "Rapido:",
       "/noticia Nueva colaboracion artistica para la temporada 2026. Destacada. https://luryart.com/",
@@ -739,32 +720,10 @@ function buildHelpMessage(kind) {
     ].join("\n");
   }
 
-  if (kind === "video") {
-    return [
-      "Puedes anadir videos de YouTube por seccion.",
-      "",
-      "Rapido:",
-      "/video Sube este video a la seccion recital https://youtu.be/abc123 destacado",
-      "",
-      "Estructurado:",
-      "/video",
-      "titulo: Nuevo recital",
-      "seccion: recital",
-      "url: https://www.youtube.com/watch?v=abc123",
-      "descripcion: Video para la seccion de recitales.",
-      "posicion: 1",
-      "destacado: si",
-    ].join("\n");
-  }
-
   return [
-    "Usa /concierto, /noticia o /video.",
-    "",
-    buildHelpMessage("concert"),
+    "Usa /noticia para publicar, /editar para cambiar una noticia, /borrar para eliminarla y /lista para verla.",
     "",
     buildHelpMessage("news"),
-    "",
-    buildHelpMessage("video"),
   ].join("\n");
 }
 
@@ -1090,6 +1049,15 @@ function parseMutationRequest(text, options = {}) {
       return parsed;
     }
 
+    if (parsed.kind !== "news") {
+      return {
+        type: "error",
+        kind: parsed.kind,
+        message: "Desde Telegram solo esta permitido crear o editar noticias.",
+        help: buildHelpMessage("news"),
+      };
+    }
+
     return {
       type: "mutation",
       action: "upsert",
@@ -1104,8 +1072,17 @@ function parseMutationRequest(text, options = {}) {
   if (!kind) {
     return {
       type: "error",
-      message: "Necesito saber si hablas de un concierto, una noticia o un video.",
-      help: buildHelpMessage(),
+      message: "Necesito saber a que noticia te refieres.",
+      help: buildHelpMessage("news"),
+    };
+  }
+
+  if (kind !== "news") {
+    return {
+      type: "error",
+      kind,
+      message: "Desde Telegram solo esta permitido gestionar noticias.",
+      help: buildHelpMessage("news"),
     };
   }
 
