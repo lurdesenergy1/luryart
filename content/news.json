@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "prueba-real-luryart-2026-04-17",
+    "title": "Prueba real Luryart",
+    "date": "2026-04-17",
+    "summary": "Noticia de prueba para validar que la portada publica las noticias de forma visible y legible en produccion.",
+    "linkText": "Ver portada",
+    "linkUrl": "https://luryart.com/",
+    "status": "published",
+    "featured": true
+  }
+]
