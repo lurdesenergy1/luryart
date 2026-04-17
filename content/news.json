@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "segunda-prueba-real-luryart-2026-04-17",
+    "title": "Segunda prueba real Luryart",
+    "date": "2026-04-17",
+    "summary": "Segunda noticia publicada para confirmar que la seccion de novedades se puede repoblar tras un borrado y sigue viendose clara.",
+    "linkText": "Contactar con Luryart",
+    "linkUrl": "https://luryart.com/#contacto",
+    "status": "published",
+    "featured": true
+  }
+]
