@@ -5,9 +5,8 @@
 1. En Telegram escribes al bot.
 2. Telegram manda el mensaje al webhook de Netlify.
 3. La funcion `telegram-webhook` interpreta altas, ediciones, listados y borrados solo de noticias.
-4. La funcion dispara un `repository_dispatch` en GitHub.
-5. GitHub Actions actualiza `content/news.json`.
-6. Netlify detecta el commit nuevo y publica la web.
+4. La funcion lee y actualiza `content/news.json` directamente en GitHub mediante la API de contenidos.
+5. Netlify detecta el commit nuevo y publica la web.
 
 ## Archivos preparados
 
@@ -22,6 +21,7 @@
 - `GITHUB_OWNER`
 - `GITHUB_REPO`
 - `GITHUB_TOKEN`
+- `GITHUB_BRANCH` opcional, por defecto `main`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_WEBHOOK_SECRET`
 - `TELEGRAM_ALLOWED_CHAT_IDS`
@@ -70,6 +70,7 @@ Los comandos que se cargan en Telegram son:
 
 - Desde Telegram solo se puede tocar `content/news.json`.
 - Conciertos, programas y videos siguen visibles en la web, pero no se editan desde el bot.
+- Ya no dependes de GitHub Actions para que una noticia entre en produccion.
 
 ## Comprobaciones locales
 

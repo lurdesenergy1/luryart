@@ -78,6 +78,201 @@ function requestGitHubDispatch(owner, repo, token, body) {
   });
 }
 
+function getGitHubBranch() {
+  return process.env.GITHUB_BRANCH || "main";
+}
+
+function slugify(text) {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function isValidDate(value) {
+  const text = String(value || "");
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return false;
+  }
+
+  const [year, month, day] = text.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+function isValidHttpUrl(value) {
+  if (!value) {
+    return true;
+  }
+
+  try {
+    const url = new URL(String(value));
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch (error) {
+    return false;
+  }
+}
+
+function asTrimmedString(value) {
+  return String(value || "").trim();
+}
+
+function asBoolean(value) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return ["1", "true", "yes", "y", "si", "s"].includes(value.toLowerCase());
+  }
+
+  return Boolean(value);
+}
+
+function normalizeNewsEntry(entry) {
+  const title = asTrimmedString(entry.title);
+  const date = asTrimmedString(entry.date);
+  const summary = asTrimmedString(entry.summary);
+  const linkUrl = asTrimmedString(entry.linkUrl);
+  const linkText = asTrimmedString(entry.linkText) || (linkUrl ? "Mas informacion" : "");
+  const status = asTrimmedString(entry.status || "published") || "published";
+  const featured = asBoolean(entry.featured);
+
+  if (!title) {
+    throw new Error("La noticia necesita title.");
+  }
+
+  if (!isValidDate(date)) {
+    throw new Error(`Fecha invalida para noticia: ${date}`);
+  }
+
+  if (!isValidHttpUrl(linkUrl)) {
+    throw new Error(`URL invalida para noticia: ${linkUrl}`);
+  }
+
+  if (linkText && !linkUrl) {
+    throw new Error("La noticia no puede tener linkText sin linkUrl.");
+  }
+
+  if (!["published", "draft"].includes(status)) {
+    throw new Error(`Estado invalido para noticia: ${status}`);
+  }
+
+  const id = asTrimmedString(entry.id) || `${slugify(title)}-${date}`;
+
+  return {
+    id,
+    title,
+    date,
+    summary,
+    linkText,
+    linkUrl,
+    status,
+    featured,
+  };
+}
+
+function sortNewsEntries(entries) {
+  return [...entries].sort((left, right) => {
+    const leftFeatured = left.featured ? 0 : 1;
+    const rightFeatured = right.featured ? 0 : 1;
+
+    if (leftFeatured !== rightFeatured) {
+      return leftFeatured - rightFeatured;
+    }
+
+    return right.date.localeCompare(left.date) || left.title.localeCompare(right.title, "es");
+  });
+}
+
+async function fetchGitHubFile(owner, repo, token, filePath) {
+  const branch = encodeURIComponent(getGitHubBranch());
+  return request({
+    url: `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`,
+    method: "GET",
+    token,
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+}
+
+async function updateGitHubFile(owner, repo, token, filePath, content, sha, message) {
+  return request({
+    url: `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
+    method: "PUT",
+    token,
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+    body: {
+      message,
+      content: Buffer.from(content, "utf8").toString("base64"),
+      sha,
+      branch: getGitHubBranch(),
+    },
+  });
+}
+
+async function loadNewsCollectionFromGitHub() {
+  const file = await fetchGitHubFile(
+    process.env.GITHUB_OWNER,
+    process.env.GITHUB_REPO,
+    process.env.GITHUB_TOKEN,
+    "content/news.json"
+  );
+
+  const encoded = String(file.content || "").replace(/\n/g, "");
+  const decoded = Buffer.from(encoded, "base64").toString("utf8");
+  const collection = JSON.parse(decoded || "[]");
+
+  if (!Array.isArray(collection)) {
+    throw new Error("content/news.json no contiene un array JSON.");
+  }
+
+  return {
+    sha: file.sha,
+    entries: collection,
+  };
+}
+
+async function saveNewsCollectionToGitHub(entries, sha, message) {
+  const normalized = entries.map((entry) => normalizeNewsEntry(entry));
+  const uniqueEntries = [];
+  const seen = new Set();
+
+  normalized.forEach((entry) => {
+    if (seen.has(entry.id)) {
+      return;
+    }
+
+    seen.add(entry.id);
+    uniqueEntries.push(entry);
+  });
+
+  const serialized = `${JSON.stringify(sortNewsEntries(uniqueEntries), null, 2)}\n`;
+
+  await updateGitHubFile(
+    process.env.GITHUB_OWNER,
+    process.env.GITHUB_REPO,
+    process.env.GITHUB_TOKEN,
+    "content/news.json",
+    serialized,
+    sha,
+    message
+  );
+}
+
 function sendTelegramMessage(botToken, chatId, text) {
   return request({
     url: `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -254,16 +449,16 @@ function buildSuccessMessage(action, kind, entryOrId) {
 
   if (action === "delete") {
     return [
-      `Solicitud de borrado del ${label} enviada a GitHub.`,
-      "Si el workflow termina bien, Netlify desplegara la nueva version en unos minutos.",
+      `Borrado de ${label} guardado en GitHub.`,
+      "Netlify desplegara la nueva version en unos minutos.",
       "",
       String(entryOrId),
     ].join("\n");
   }
 
   return [
-    `Solicitud de ${action === "update" ? "actualizacion" : "publicacion"} de ${label} enviada a GitHub.`,
-    "Si el workflow termina bien, Netlify desplegara la nueva version en unos minutos.",
+    `${action === "update" ? "Actualizacion" : "Publicacion"} de ${label} guardada en GitHub.`,
+    "Netlify desplegara la nueva version en unos minutos.",
     "",
     summarizeEntry(kind, entryOrId),
   ].join("\n");
@@ -293,15 +488,6 @@ function mergeEntry(existing, patch) {
   });
 
   return merged;
-}
-
-async function dispatchMutation(payload) {
-  await requestGitHubDispatch(
-    process.env.GITHUB_OWNER,
-    process.env.GITHUB_REPO,
-    process.env.GITHUB_TOKEN,
-    payload
-  );
 }
 
 exports.handler = async (event) => {
@@ -385,34 +571,31 @@ exports.handler = async (event) => {
     }
 
     if (parsed.action === "upsert") {
-      await dispatchMutation({
-        event_type: "telegram-content-update",
-        client_payload: {
-          action: "upsert",
-          kind: parsed.kind,
-          entry: parsed.entry,
-        },
-      });
+      const { entries, sha } = await loadNewsCollectionFromGitHub();
+      const normalized = normalizeNewsEntry(parsed.entry);
+      const filtered = entries.filter((item) => item.id !== normalized.id);
+      filtered.push(normalized);
+      await saveNewsCollectionToGitHub(filtered, sha, `chore: actualizar noticia ${normalized.id} desde telegram`);
 
       await sendTelegramMessage(
         process.env.TELEGRAM_BOT_TOKEN,
         chatId,
-        buildSuccessMessage("upsert", parsed.kind, parsed.entry)
+        buildSuccessMessage("upsert", parsed.kind, normalized)
       );
       return json(200, { ok: true, upsert: true });
     }
 
-      const collection = await loadCollection(origin, "news");
-      const target = resolveTarget(parsed.kind, collection, parsed.targetId, parsed.query);
+    const githubNews = await loadNewsCollectionFromGitHub();
+    const target = resolveTarget(parsed.kind, githubNews.entries, parsed.targetId, parsed.query);
 
     if (!target) {
-        await sendTelegramMessage(
-          process.env.TELEGRAM_BOT_TOKEN,
-          chatId,
-          'No he encontrado ninguna noticia con esa referencia. Puedes pedirme "lista de noticias".'
-        );
-        return json(200, { ok: true, not_found: true });
-      }
+      await sendTelegramMessage(
+        process.env.TELEGRAM_BOT_TOKEN,
+        chatId,
+        'No he encontrado ninguna noticia con esa referencia. Puedes pedirme "lista de noticias".'
+      );
+      return json(200, { ok: true, not_found: true });
+    }
 
     if (parsed.action === "delete") {
       if (!parsed.confirm) {
@@ -420,15 +603,8 @@ exports.handler = async (event) => {
         return json(200, { ok: true, needs_confirmation: true });
       }
 
-      await dispatchMutation({
-        event_type: "telegram-content-update",
-        client_payload: {
-          action: "delete",
-          kind: parsed.kind,
-          id: target.id,
-          entry: {},
-        },
-      });
+      const filtered = githubNews.entries.filter((item) => item.id !== target.id);
+      await saveNewsCollectionToGitHub(filtered, githubNews.sha, `chore: borrar noticia ${target.id} desde telegram`);
 
       await sendTelegramMessage(
         process.env.TELEGRAM_BOT_TOKEN,
@@ -449,19 +625,19 @@ exports.handler = async (event) => {
       return json(200, { ok: true, needs_confirmation: true });
     }
 
-    await dispatchMutation({
-      event_type: "telegram-content-update",
-      client_payload: {
-        action: "upsert",
-        kind: parsed.kind,
-        entry: mergedEntry,
-      },
-    });
+    const normalizedMergedEntry = normalizeNewsEntry(mergedEntry);
+    const filtered = githubNews.entries.filter((item) => item.id !== normalizedMergedEntry.id && item.id !== target.id);
+    filtered.push(normalizedMergedEntry);
+    await saveNewsCollectionToGitHub(
+      filtered,
+      githubNews.sha,
+      `chore: editar noticia ${normalizedMergedEntry.id} desde telegram`
+    );
 
     await sendTelegramMessage(
       process.env.TELEGRAM_BOT_TOKEN,
       chatId,
-      buildSuccessMessage("update", parsed.kind, mergedEntry)
+      buildSuccessMessage("update", parsed.kind, normalizedMergedEntry)
     );
   } catch (error) {
     await sendTelegramMessage(
