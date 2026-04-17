@@ -467,10 +467,10 @@ function buildSuccessMessage(action, kind, entryOrId) {
 function buildFriendlyGitHubError(error) {
   const message = error instanceof Error ? error.message : String(error);
 
-  if (/Resource not accessible by personal access token/i.test(message)) {
+  if (/Resource not accessible by personal access token/i.test(message) || /HTTP 403/i.test(message)) {
     return [
       "No se pudo enviar la actualizacion a GitHub.",
-      "El token de GitHub no tiene permiso suficiente.",
+      "El token de GitHub no tiene permiso suficiente para escribir en el repositorio.",
       "Revisa GITHUB_TOKEN y activa Contents: Read and write en el repo luryart.",
     ].join("\n");
   }
