@@ -95,6 +95,13 @@ function testListMutation() {
   assert.strictEqual(result.kind, "news");
 }
 
+function testNaturalFallbackMessage() {
+  const result = parseMutationRequest("hola");
+
+  assert.strictEqual(result.type, "error");
+  assert.match(result.message, /Puedo ayudarte a publicar, editar, borrar y listar noticias/i);
+}
+
 testConcertMessage();
 testNewsMessage();
 testHelp();
@@ -105,5 +112,6 @@ testDeleteMutation();
 testDeleteConfirmationMutation();
 testUpdateMutation();
 testListMutation();
+testNaturalFallbackMessage();
 
 console.log("Parser de Telegram validado correctamente.");

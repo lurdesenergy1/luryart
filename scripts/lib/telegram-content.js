@@ -727,6 +727,25 @@ function buildHelpMessage(kind) {
   ].join("\n");
 }
 
+function buildNaturalFallbackMessage() {
+  return [
+    "No he entendido bien tu mensaje.",
+    "Puedo ayudarte a publicar, editar, borrar y listar noticias de Luryart.",
+    "",
+    "Ejemplos naturales:",
+    'publica una noticia sobre la nueva fecha en Pamplona',
+    'edita la noticia nueva colaboracion: resumen: texto actualizado',
+    'borra la noticia de la entrevista',
+    'lista de noticias',
+    "",
+    'Si prefieres ir a lo seguro, usa /noticia o escribe /ayuda.',
+  ].join("\n");
+}
+
+function isGreeting(text) {
+  return /^(hola|buenas|buenos dias|buenas tardes|buenas noches|hey|hello)\b/.test(normalizeText(text));
+}
+
 function parseFieldLines(kind, lines) {
   const fieldMap = kind === "concert" ? CONCERT_FIELDS : kind === "news" ? NEWS_FIELDS : VIDEO_FIELDS;
   const entry = {};
@@ -894,8 +913,7 @@ function parseTelegramContent(text, options = {}) {
     if (command.type === "unknown") {
       return {
         type: "error",
-        message: "Comando no reconocido. Usa /concierto, /noticia, /video o /ayuda.",
-        help: buildHelpMessage(),
+        message: buildNaturalFallbackMessage(),
       };
     }
 
@@ -913,8 +931,7 @@ function parseTelegramContent(text, options = {}) {
     if (!kind) {
       return {
         type: "error",
-        message: "No he podido decidir si es concierto, noticia o video. Empieza por /concierto, /noticia o /video.",
-        help: buildHelpMessage(),
+        message: isGreeting(lines.join(" ")) ? buildNaturalFallbackMessage() : buildNaturalFallbackMessage(),
       };
     }
   }
@@ -1072,8 +1089,7 @@ function parseMutationRequest(text, options = {}) {
   if (!kind) {
     return {
       type: "error",
-      message: "Necesito saber a que noticia te refieres.",
-      help: buildHelpMessage("news"),
+      message: buildNaturalFallbackMessage(),
     };
   }
 
@@ -1159,6 +1175,7 @@ function parseMutationRequest(text, options = {}) {
 
 module.exports = {
   buildHelpMessage,
+  buildNaturalFallbackMessage,
   parseMutationRequest,
   parseTelegramContent,
   summarizeEntry,
