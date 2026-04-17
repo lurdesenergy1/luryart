@@ -256,7 +256,21 @@ function renderNews(items) {
     .sort((left, right) => {
       const rightDate = parseDate(right.date);
       const leftDate = parseDate(left.date);
-      return rightDate - leftDate;
+      const rightTime = rightDate ? rightDate.getTime() : 0;
+      const leftTime = leftDate ? leftDate.getTime() : 0;
+
+      if (rightTime !== leftTime) {
+        return rightTime - leftTime;
+      }
+
+      const leftFeatured = left.featured ? 0 : 1;
+      const rightFeatured = right.featured ? 0 : 1;
+
+      if (leftFeatured !== rightFeatured) {
+        return leftFeatured - rightFeatured;
+      }
+
+      return String(right.title || "").localeCompare(String(left.title || ""), "es");
     });
 
   if (!news.length) {
@@ -273,7 +287,8 @@ function renderNews(items) {
   }
 
   container.innerHTML = news
-    .map((item) => {
+    .map((item, index) => {
+      const isLatest = index === 0;
       const linkHtml =
         item.linkUrl && item.linkText
           ? `
@@ -289,13 +304,14 @@ function renderNews(items) {
           : "";
 
       return `
-        <article class="surface-card p-6 flex flex-col">
+        <article class="surface-card p-6 flex flex-col ${isLatest ? "md:col-span-2 xl:col-span-2 border-green-200 shadow-xl" : ""}">
           <div class="flex flex-wrap gap-2">
+            ${isLatest ? '<span class="info-chip">Ultima noticia</span>' : ""}
             <span class="info-chip">${escapeHtml(formatLongDate(item.date))}</span>
             ${item.featured ? '<span class="info-chip">Destacada</span>' : ""}
           </div>
-          <h3 class="text-2xl font-bold text-gray-900 mt-4">${escapeHtml(item.title || "Noticia")}</h3>
-          <p class="text-gray-700 mt-4 flex-1">${escapeHtml(item.summary || "Contenido en actualizacion.")}</p>
+          <h3 class="${isLatest ? "text-3xl" : "text-2xl"} font-bold text-gray-900 mt-4">${escapeHtml(item.title || "Noticia")}</h3>
+          <p class="text-gray-700 mt-4 flex-1 ${isLatest ? "text-base leading-relaxed max-w-3xl" : ""}">${escapeHtml(item.summary || "Contenido en actualizacion.")}</p>
           ${linkHtml}
         </article>
       `;
