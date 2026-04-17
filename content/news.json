@@ -1,12 +1,1 @@
-[
-  {
-    "id": "prueba-real-luryart-2026-04-17",
-    "title": "Prueba real Luryart editada",
-    "date": "2026-04-17",
-    "summary": "Noticia editada para comprobar que los cambios se publican en produccion y siguen viendose de forma clara en la portada.",
-    "linkText": "Abrir Luryart",
-    "linkUrl": "https://luryart.com/",
-    "status": "published",
-    "featured": false
-  }
-]
+[]
