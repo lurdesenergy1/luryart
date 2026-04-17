@@ -9,7 +9,7 @@ function exitWithError(message) {
 
 function usage() {
   console.log("Uso:");
-  console.log("  node scripts/github-dispatch.js <concert|news> <payload.json>");
+  console.log("  node scripts/github-dispatch.js <concert|news|video> <payload.json>");
   console.log("");
   console.log("Variables de entorno requeridas:");
   console.log("  GITHUB_TOKEN");
@@ -58,7 +58,7 @@ function request(url, token, body) {
 
           reject(
             new Error(
-              `GitHub respondió con ${res.statusCode || "error"}${responseBody ? `: ${responseBody}` : ""}`
+              `GitHub respondio con ${res.statusCode || "error"}${responseBody ? `: ${responseBody}` : ""}`
             )
           );
         });
@@ -82,8 +82,8 @@ async function main() {
     process.exit(1);
   }
 
-  if (!["concert", "news"].includes(kind)) {
-    exitWithError("El tipo de contenido debe ser `concert` o `news`.");
+  if (!["concert", "news", "video"].includes(kind)) {
+    exitWithError("El tipo de contenido debe ser `concert`, `news` o `video`.");
   }
 
   if (!token || !owner || !repo) {

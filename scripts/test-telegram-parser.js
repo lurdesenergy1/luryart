@@ -1,8 +1,5 @@
 const assert = require("assert");
-const {
-  buildHelpMessage,
-  parseTelegramContent,
-} = require("./lib/telegram-content");
+const { buildHelpMessage, parseTelegramContent } = require("./lib/telegram-content");
 
 function testConcertMessage() {
   const result = parseTelegramContent(`
@@ -43,7 +40,6 @@ destacado: si
 
 function testHelp() {
   const result = parseTelegramContent("/ayuda");
-
   assert.strictEqual(result.type, "help");
   assert.strictEqual(result.message, buildHelpMessage());
 }
@@ -61,7 +57,8 @@ lugar raro: X
 
 function testNaturalConcertMessage() {
   const result = parseTelegramContent(
-    "/concierto Tengo un recital en Pamplona el 18 de abril de 2026 a las 19:30 en la parroquia de San Lorenzo. Destacado."
+    "/concierto Tengo un recital en Pamplona el 18 de abril de 2026 a las 19:30 en la parroquia de San Lorenzo. Destacado.",
+    { referenceDate: "2026-04-17T12:00:00Z" }
   );
 
   assert.strictEqual(result.type, "content");
@@ -70,6 +67,17 @@ function testNaturalConcertMessage() {
   assert.strictEqual(result.entry.time, "19:30");
   assert.strictEqual(result.entry.city, "Pamplona");
   assert.strictEqual(result.entry.featured, true);
+}
+
+function testRelativeDateConcertMessage() {
+  const result = parseTelegramContent("/concierto Recital manana a las 20h en Pamplona.", {
+    referenceDate: "2026-04-17T12:00:00Z",
+  });
+
+  assert.strictEqual(result.type, "content");
+  assert.strictEqual(result.kind, "concert");
+  assert.strictEqual(result.entry.date, "2026-04-18");
+  assert.strictEqual(result.entry.time, "20:00");
 }
 
 function testNaturalNewsMessage() {
@@ -85,11 +93,38 @@ function testNaturalNewsMessage() {
 
 function testInferKindWithoutCommand() {
   const result = parseTelegramContent(
-    "Nueva colaboracion artistica anunciada para la temporada 2026 con estreno en otoño."
+    "Nueva colaboracion artistica anunciada para la temporada 2026 con estreno en otono."
   );
 
   assert.strictEqual(result.type, "content");
   assert.strictEqual(result.kind, "news");
+}
+
+function testVideoMessage() {
+  const result = parseTelegramContent(
+    "/video Sube este video a la seccion recital https://youtu.be/All5AboOBUE destacado"
+  );
+
+  assert.strictEqual(result.type, "content");
+  assert.strictEqual(result.kind, "video");
+  assert.strictEqual(result.entry.section, "recital");
+  assert.strictEqual(result.entry.youtubeUrl, "https://youtu.be/All5AboOBUE");
+}
+
+function testStructuredVideoMessage() {
+  const result = parseTelegramContent(`
+/video
+titulo: Nuevo video de recital
+seccion: recital
+url: https://www.youtube.com/watch?v=All5AboOBUE
+posicion: 1
+destacado: si
+  `);
+
+  assert.strictEqual(result.type, "content");
+  assert.strictEqual(result.kind, "video");
+  assert.strictEqual(result.entry.position, "1");
+  assert.strictEqual(result.entry.section, "recital");
 }
 
 testConcertMessage();
@@ -97,7 +132,10 @@ testNewsMessage();
 testHelp();
 testUnknownField();
 testNaturalConcertMessage();
+testRelativeDateConcertMessage();
 testNaturalNewsMessage();
 testInferKindWithoutCommand();
+testVideoMessage();
+testStructuredVideoMessage();
 
 console.log("Parser de Telegram validado correctamente.");

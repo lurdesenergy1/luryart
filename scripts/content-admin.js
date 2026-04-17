@@ -8,10 +8,12 @@ const CONTENT_DIR = process.env.CONTENT_DIR
 const FILES = {
   concert: path.join(CONTENT_DIR, "concerts.json"),
   news: path.join(CONTENT_DIR, "news.json"),
+  video: path.join(CONTENT_DIR, "videos.json"),
 };
 
 const CONCERT_STATUSES = new Set(["upcoming", "soldout", "cancelled", "draft"]);
 const NEWS_STATUSES = new Set(["published", "draft"]);
+const VIDEO_SECTIONS = new Set(["zarzuelas", "recital", "clasico", "musicales"]);
 
 function exitWithError(message) {
   console.error(message);
@@ -27,13 +29,11 @@ function ensureArray(value, label) {
 }
 
 function readJson(filePath) {
-  const raw = fs.readFileSync(filePath, "utf8");
-  return JSON.parse(raw);
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
 function writeJson(filePath, value) {
-  const json = `${JSON.stringify(value, null, 2)}\n`;
-  fs.writeFileSync(filePath, json, "utf8");
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
 function slugify(text) {
@@ -90,6 +90,14 @@ function isValidHttpUrl(value) {
   }
 }
 
+function isValidYoutubeUrl(value) {
+  if (!isValidHttpUrl(value)) {
+    return false;
+  }
+
+  return /(?:youtube\.com|youtu\.be)/i.test(String(value || ""));
+}
+
 function asTrimmedString(value) {
   return String(value || "").trim();
 }
@@ -104,6 +112,40 @@ function asBoolean(value) {
   }
 
   return Boolean(value);
+}
+
+function asOptionalInteger(value) {
+  if (value === "" || value === null || value === undefined) {
+    return "";
+  }
+
+  const parsed = Number.parseInt(String(value), 10);
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+function normalizeSection(value) {
+  const normalized = asTrimmedString(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (normalized === "zarzuela" || normalized === "opera") {
+    return "zarzuelas";
+  }
+
+  if (normalized === "recitales") {
+    return "recital";
+  }
+
+  if (normalized === "clasicos" || normalized === "organo") {
+    return "clasico";
+  }
+
+  if (normalized === "musical") {
+    return "musicales";
+  }
+
+  return normalized;
 }
 
 function normalizeConcert(entry) {
@@ -196,6 +238,43 @@ function normalizeNews(entry) {
   };
 }
 
+function normalizeVideo(entry) {
+  const title = asTrimmedString(entry.title);
+  const section = normalizeSection(entry.section);
+  const youtubeUrl = asTrimmedString(entry.youtubeUrl);
+  const description = asTrimmedString(entry.description);
+  const featured = asBoolean(entry.featured);
+  const positionValue = asOptionalInteger(entry.position);
+
+  if (!title) {
+    throw new Error("El video necesita `title`.");
+  }
+
+  if (!VIDEO_SECTIONS.has(section)) {
+    throw new Error(`Seccion invalida para video: ${section}`);
+  }
+
+  if (!isValidYoutubeUrl(youtubeUrl)) {
+    throw new Error(`URL de YouTube invalida para video: ${youtubeUrl}`);
+  }
+
+  if (Number.isNaN(positionValue)) {
+    throw new Error(`Posicion invalida para video: ${entry.position}`);
+  }
+
+  const id = asTrimmedString(entry.id) || `${section}-${slugify(title)}`;
+
+  return {
+    id,
+    title,
+    section,
+    youtubeUrl,
+    description,
+    featured,
+    position: positionValue === "" ? "" : positionValue,
+  };
+}
+
 function normalizeEntry(kind, entry) {
   if (kind === "concert") {
     return normalizeConcert(entry);
@@ -205,6 +284,10 @@ function normalizeEntry(kind, entry) {
     return normalizeNews(entry);
   }
 
+  if (kind === "video") {
+    return normalizeVideo(entry);
+  }
+
   throw new Error(`Tipo de contenido no soportado: ${kind}`);
 }
 
@@ -212,6 +295,30 @@ function sortEntries(kind, entries) {
   const sorted = [...entries];
 
   sorted.sort((left, right) => {
+    if (kind === "video") {
+      const sectionCompare = left.section.localeCompare(right.section, "es");
+
+      if (sectionCompare !== 0) {
+        return sectionCompare;
+      }
+
+      const leftPosition = left.position === "" ? Number.MAX_SAFE_INTEGER : left.position;
+      const rightPosition = right.position === "" ? Number.MAX_SAFE_INTEGER : right.position;
+
+      if (leftPosition !== rightPosition) {
+        return leftPosition - rightPosition;
+      }
+
+      const leftFeatured = left.featured ? 0 : 1;
+      const rightFeatured = right.featured ? 0 : 1;
+
+      if (leftFeatured !== rightFeatured) {
+        return leftFeatured - rightFeatured;
+      }
+
+      return left.title.localeCompare(right.title, "es");
+    }
+
     const leftFeatured = left.featured ? 0 : 1;
     const rightFeatured = right.featured ? 0 : 1;
 
@@ -240,8 +347,7 @@ function loadCollection(kind) {
 }
 
 function saveCollection(kind, entries) {
-  const filePath = FILES[kind];
-  writeJson(filePath, sortEntries(kind, entries));
+  writeJson(FILES[kind], sortEntries(kind, entries));
 }
 
 function upsertEntry(kind, entry) {
@@ -283,7 +389,7 @@ function readPayloadFromFile(filePath) {
 function printUsage() {
   console.log("Uso:");
   console.log("  node scripts/content-admin.js validate");
-  console.log("  node scripts/content-admin.js apply-file <concert|news> <payload.json>");
+  console.log("  node scripts/content-admin.js apply-file <concert|news|video> <payload.json>");
 }
 
 function main() {
@@ -292,6 +398,7 @@ function main() {
   if (command === "validate") {
     validateCollection("concert");
     validateCollection("news");
+    validateCollection("video");
     return;
   }
 

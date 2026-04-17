@@ -61,6 +61,7 @@ async function main() {
     commands: [
       { command: "concierto", description: "Publicar un concierto" },
       { command: "noticia", description: "Publicar una noticia" },
+      { command: "video", description: "Anadir un video de YouTube" },
       { command: "ayuda", description: "Ver ejemplos de uso" },
       { command: "start", description: "Mostrar ayuda" },
     ],

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "zarzuelas-habanera",
+    "title": "Habanera",
+    "section": "zarzuelas",
+    "youtubeUrl": "https://www.youtube.com/watch?v=VC1E0KS_nzU",
+    "description": "Fragmento de repertorio lirico para la seccion de zarzuela.",
+    "featured": true,
+    "position": 1
+  },
+  {
+    "id": "zarzuelas-brindisi",
+    "title": "Brindisi de La Traviata",
+    "section": "zarzuelas",
+    "youtubeUrl": "https://www.youtube.com/watch?v=K8_mpR3kJE4",
+    "description": "Video de escena lirica para presentaciones culturales.",
+    "featured": false,
+    "position": 2
+  },
+  {
+    "id": "recital-entrevista",
+    "title": "Entrevista recital",
+    "section": "recital",
+    "youtubeUrl": "https://www.youtube.com/watch?v=All5AboOBUE",
+    "description": "Entrevista y presentacion del proyecto de recitales.",
+    "featured": true,
+    "position": 1
+  },
+  {
+    "id": "recital-nuevo",
+    "title": "Nuevo recital",
+    "section": "recital",
+    "youtubeUrl": "https://www.youtube.com/watch?v=Xdx0fAGFUu4",
+    "description": "Pieza reciente dentro de la seccion de recitales.",
+    "featured": false,
+    "position": 2
+  },
+  {
+    "id": "clasico-video-1",
+    "title": "Concierto clasico 1",
+    "section": "clasico",
+    "youtubeUrl": "https://www.youtube.com/watch?v=Cqb2oQcmfPE",
+    "description": "Interpretacion clasica con organo.",
+    "featured": true,
+    "position": 1
+  },
+  {
+    "id": "clasico-video-2",
+    "title": "Concierto clasico 2",
+    "section": "clasico",
+    "youtubeUrl": "https://www.youtube.com/watch?v=6L7NC1WPC1w",
+    "description": "Nueva muestra de repertorio sacro y clasico.",
+    "featured": false,
+    "position": 2
+  },
+  {
+    "id": "clasico-video-3",
+    "title": "Concierto clasico 3",
+    "section": "clasico",
+    "youtubeUrl": "https://www.youtube.com/watch?v=Iu297Wg6Uz0",
+    "description": "Video de programa clasico para iglesia o catedral.",
+    "featured": false,
+    "position": 3
+  },
+  {
+    "id": "clasico-video-4",
+    "title": "Concierto clasico 4",
+    "section": "clasico",
+    "youtubeUrl": "https://www.youtube.com/watch?v=CipFF-Dytp0",
+    "description": "Interpretacion instrumental y vocal en formato clasico.",
+    "featured": false,
+    "position": 4
+  },
+  {
+    "id": "clasico-video-5",
+    "title": "Concierto clasico 5",
+    "section": "clasico",
+    "youtubeUrl": "https://www.youtube.com/watch?v=aiq4-qkSNZs",
+    "description": "Quinto video base para la galeria de clasico con organo.",
+    "featured": false,
+    "position": 5
+  },
+  {
+    "id": "musicales-superstar",
+    "title": "Musicales para contratacion",
+    "section": "musicales",
+    "youtubeUrl": "https://www.youtube.com/watch?v=NggqzKFsFH0",
+    "description": "Promocional de producciones teatrales y musicales.",
+    "featured": true,
+    "position": 1
+  }
+]

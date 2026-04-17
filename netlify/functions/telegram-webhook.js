@@ -129,13 +129,27 @@ function hasRequiredConfig() {
 }
 
 function buildSuccessMessage(kind, entry) {
-  const label = kind === "concert" ? "concierto" : "noticia";
+  const label = kind === "concert" ? "concierto" : kind === "news" ? "noticia" : "video";
   return [
     `Solicitud de ${label} enviada a GitHub.`,
     "Si el workflow termina bien, Netlify desplegara la nueva version en unos minutos.",
     "",
     summarizeEntry(kind, entry),
   ].join("\n");
+}
+
+function buildFriendlyGitHubError(error) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (/Resource not accessible by personal access token/i.test(message)) {
+    return [
+      "No se pudo enviar la actualizacion a GitHub.",
+      "El token de GitHub no tiene permiso suficiente.",
+      "Revisa GITHUB_TOKEN y activa Contents: Read and write en el repo luryart.",
+    ].join("\n");
+  }
+
+  return ["No se pudo enviar la actualizacion a GitHub.", message].join("\n");
 }
 
 exports.handler = async (event) => {
@@ -223,10 +237,7 @@ exports.handler = async (event) => {
     await sendTelegramMessage(
       process.env.TELEGRAM_BOT_TOKEN,
       chatId,
-      [
-        "No se pudo enviar la actualizacion a GitHub.",
-        error instanceof Error ? error.message : String(error),
-      ].join("\n")
+      buildFriendlyGitHubError(error)
     );
   }
 

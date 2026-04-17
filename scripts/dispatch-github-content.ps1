@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory = $true)]
-  [ValidateSet("concert", "news")]
+  [ValidateSet("concert", "news", "video")]
   [string]$Kind,
 
   [Parameter(Mandatory = $true)]

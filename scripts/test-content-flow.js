@@ -30,11 +30,15 @@ try {
   fs.mkdirSync(tempContentDir, { recursive: true });
   fs.copyFileSync(path.join(root, "content", "concerts.json"), path.join(tempContentDir, "concerts.json"));
   fs.copyFileSync(path.join(root, "content", "news.json"), path.join(tempContentDir, "news.json"));
+  fs.copyFileSync(path.join(root, "content", "videos.json"), path.join(tempContentDir, "videos.json"));
 
   run(["apply-file", "concert", path.join(root, "examples", "concert-payload.json")], {
     CONTENT_DIR: tempContentDir,
   });
   run(["apply-file", "news", path.join(root, "examples", "news-payload.json")], {
+    CONTENT_DIR: tempContentDir,
+  });
+  run(["apply-file", "video", path.join(root, "examples", "video-payload.json")], {
     CONTENT_DIR: tempContentDir,
   });
   run(["validate"], {
