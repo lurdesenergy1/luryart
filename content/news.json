@@ -8,5 +8,15 @@
     "linkUrl": "https://luryart.com/#contacto",
     "status": "published",
     "featured": true
+  },
+  {
+    "id": "pon-este-mensaje-en-noticias-2026-04-17",
+    "title": "Pon este mensaje en noticias",
+    "date": "2026-04-17",
+    "summary": "Pon este mensaje en noticias",
+    "linkText": "",
+    "linkUrl": "",
+    "status": "published",
+    "featured": false
   }
 ]
