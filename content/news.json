@@ -10,6 +10,16 @@
     "featured": true
   },
   {
+    "id": "concierto-dia-28-mayo-2026-en-la-meca-con-el-coro-voces-amigas-2026-05-28",
+    "title": "Concierto día 28 Mayo 2026 en la MECA con el coro Voces Amigas",
+    "date": "2026-05-28",
+    "summary": "Concierto día 28 Mayo 2026 en la MECA con el coro Voces Amigas.",
+    "linkText": "Mas informacion",
+    "linkUrl": "https://luryart.com/",
+    "status": "published",
+    "featured": false
+  },
+  {
     "id": "noticia-2026-04-17",
     "title": "Noticia",
     "date": "2026-04-17",
